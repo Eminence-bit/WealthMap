@@ -58,7 +58,7 @@ export function PropertyMap() {
     map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
     
     // Add a scale control
-    map.current.addControl(new maplibregl.ScaleControl(), 'bottom-left');
+    map.current.addControl(new maplibregl.ScaleControl({position: 'bottom-left'}), 'bottom-left');
     
     // Load properties when map has finished loading
     map.current.on('load', () => {
