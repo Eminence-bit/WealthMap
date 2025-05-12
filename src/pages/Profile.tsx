@@ -1,14 +1,53 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser, useClerk } from '@clerk/clerk-react';
 import { BookmarksList } from '../components/BookmarksList';
+import { supabase } from '../integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Profile() {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const { signOut } = useClerk();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const { toast } = useToast();
+  
+  // Check if user is authenticated with Supabase when component loads
+  React.useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error checking authentication:', error);
+          throw error;
+        }
+        
+        if (data?.session) {
+          // Get user details
+          const { data: userData } = await supabase.auth.getUser();
+          setUser(userData.user);
+        } else {
+          // No session found, redirect to login
+          navigate('/');
+        }
+      } catch (err) {
+        console.error('Authentication error:', err);
+        toast({
+          title: "Authentication Error",
+          description: "There was a problem checking your login status. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+        setAuthChecked(true);
+      }
+    }
+    
+    checkAuth();
+  }, [navigate, toast]);
   
   // Handle property selection (navigate to map and focus on property)
   const handleSelectProperty = (propertyId: string) => {
@@ -19,12 +58,26 @@ export default function Profile() {
   // Handle sign out
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    await signOut();
-    navigate('/');
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+      navigate('/');
+    } catch (err) {
+      console.error('Sign out error:', err);
+      toast({
+        title: "Sign Out Error",
+        description: "There was a problem signing out. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   // Show loading state while checking auth
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -38,8 +91,8 @@ export default function Profile() {
     );
   }
   
-  // Redirect to login if not signed in
-  if (!isSignedIn) {
+  // Redirect to login if not signed in and auth check is complete
+  if (!user && authChecked) {
     navigate('/');
     return null;
   }
@@ -51,43 +104,45 @@ export default function Profile() {
         <div className="bg-white shadow-md">
           <div className="py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              {user?.imageUrl ? (
+              {user?.user_metadata?.avatar_url ? (
                 <img 
-                  src={user.imageUrl} 
-                  alt={user.fullName || 'User avatar'} 
+                  src={user.user_metadata.avatar_url} 
+                  alt={user.user_metadata.full_name || 'User avatar'} 
                   className="h-12 w-12 rounded-full object-cover border-2 border-wealthmap-primary"
                 />
               ) : (
                 <div className="h-12 w-12 rounded-full bg-wealthmap-primary flex items-center justify-center text-white text-lg font-medium">
-                  {user?.firstName?.[0] || user?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() || 'U'}
+                  {user?.email?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
               
               <div>
                 <h1 className="text-xl font-bold text-wealthmap-dark">
-                  {user?.fullName || user?.firstName || 'Welcome'}
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Welcome'}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  {user?.emailAddresses[0]?.emailAddress || 'Employee'}
+                  {user?.email || 'Employee'}
                 </p>
               </div>
             </div>
             
             <div className="flex space-x-2">
-              <button
+              <Button
                 onClick={() => navigate('/map')}
+                variant="outline"
                 className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Back to Map
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={handleSignOut}
                 disabled={isSigningOut}
+                variant="destructive"
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors disabled:bg-red-300"
               >
                 {isSigningOut ? 'Signing Out...' : 'Sign Out'}
-              </button>
+              </Button>
             </div>
           </div>
           
