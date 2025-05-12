@@ -24,11 +24,11 @@ declare namespace maplibregl {
   }
 
   export class NavigationControl {
-    constructor(options?: any);
+    constructor(options?: {});
   }
 
   export class ScaleControl {
-    constructor(options?: any);
+    constructor(options?: {});
   }
 
   export class LngLatBounds {

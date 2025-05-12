@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -55,10 +54,10 @@ export function PropertyMap() {
     });
     
     // Add navigation controls (zoom +/-, compass)
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.current.addControl(new maplibregl.NavigationControl({}), 'top-right');
     
     // Add a scale control
-    map.current.addControl(new maplibregl.ScaleControl({position: 'bottom-left'}), 'bottom-left');
+    map.current.addControl(new maplibregl.ScaleControl({}), 'bottom-left');
     
     // Load properties when map has finished loading
     map.current.on('load', () => {

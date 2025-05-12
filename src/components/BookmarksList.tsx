@@ -30,7 +30,7 @@ export function BookmarksList({ onSelectProperty }: { onSelectProperty?: (proper
             user_id: userData.user.id,
             property_id: bookmark.property_id,
             created_at: bookmark.created_at,
-            properties: bookmark.properties as Property
+            properties: bookmark.properties as unknown as Property
           }));
           
           setBookmarks(typedBookmarks);
