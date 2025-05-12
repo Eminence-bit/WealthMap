@@ -2,46 +2,27 @@
 import { createClient } from '@supabase/supabase-js';
 import { toast } from '@/components/ui/use-toast';
 
-// Environment variables will be set via Lovable project settings 
-// and injected at build time
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Use the provided environment variables or fallback to direct values if needed
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vlsnwwdntspvrdffgyaq.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsc253d2RudHNwdnJkZmZneWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNTE0ODksImV4cCI6MjA2MjYyNzQ4OX0.msMjUFt8W2UjBv1gOftYjLMszT2vDUBCo3kLmLVGdBQ';
 
-// Create a dummy client if we're missing credentials
-// This prevents the app from crashing but won't work for actual data
-let supabase;
+// Create the Supabase client
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Check if connection is working, and show toast notification if there are issues
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase credentials. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
-  
-  // Create a mock client that returns empty data rather than throwing errors
-  supabase = {
-    auth: {
-      getUser: async () => ({ data: { user: null }, error: null }),
-      signOut: async () => ({ error: null }),
-    },
-    from: () => ({
-      select: () => ({
-        eq: async () => ({ data: [], error: null }),
-        single: async () => ({ data: null, error: null }),
-      }),
-      insert: async () => ({ data: null, error: null }),
-      delete: async () => ({ data: null, error: null }),
-    }),
-  };
+  console.warn('Using default Supabase credentials. Consider setting VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
   
   // Show a toast notification if we're in a browser environment
   if (typeof window !== 'undefined') {
     setTimeout(() => {
       toast({
-        title: "Supabase Connection Error",
-        description: "Missing Supabase credentials. Some features may not work correctly.",
-        variant: "destructive",
+        title: "Supabase Connection Notice",
+        description: "Using default Supabase credentials.",
+        variant: "default",
       });
     }, 1000);
   }
-} else {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
 }
 
 export { supabase };
