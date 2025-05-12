@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker } from 'maplibre-gl';
+import maplibregl from 'maplibre-gl';
 import { Property } from '../lib/types';
 
 interface PropertyMarkerProps {
@@ -25,7 +25,7 @@ class PropertyMarker {
     el.title = property.address;
     
     // Set up marker with custom element
-    this.marker = new Marker({
+    this.marker = new maplibregl.Marker({
       element: el,
       anchor: 'center',
     })

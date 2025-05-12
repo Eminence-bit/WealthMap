@@ -13,7 +13,7 @@ if (!clerkPubKey && import.meta.env.MODE === 'production') {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <ClerkProvider publishableKey={clerkPubKey} fallbackMode="manual">
+  <ClerkProvider publishableKey={clerkPubKey}>
     <BrowserRouter>
       <App />
     </BrowserRouter>

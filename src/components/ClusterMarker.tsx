@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Marker } from 'maplibre-gl';
+import maplibregl from 'maplibre-gl';
 
 interface ClusterMarkerProps {
   count: number;
@@ -22,7 +22,7 @@ class ClusterMarker {
     el.innerHTML = count.toString();
     
     // Set up marker with custom element
-    this.marker = new Marker({
+    this.marker = new maplibregl.Marker({
       element: el,
       anchor: 'center',
     })
