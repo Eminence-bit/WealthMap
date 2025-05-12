@@ -11,8 +11,8 @@ import Map from "./pages/Map";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
-// Initialize Sentry
-const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
+// Initialize Sentry with provided DSN
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN || 'https://206e87f9f44bca9d76b599585be49860@o4509310131240960.ingest.us.sentry.io/4509310133993473';
 if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
