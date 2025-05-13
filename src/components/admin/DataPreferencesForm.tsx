@@ -10,6 +10,7 @@ interface DataAccessPreferences {
   zillow: boolean;
   wealth_engine: boolean;
   reportall: boolean;
+  [key: string]: boolean; // Add index signature for flexibility
 }
 
 export function DataPreferencesForm() {
@@ -59,7 +60,8 @@ export function DataPreferencesForm() {
 
         // Update state with company preferences
         if (companyData && companyData.data_access) {
-          const dataAccess = companyData.data_access as DataAccessPreferences;
+          // Type cast to DataAccessPreferences to handle JSON data
+          const dataAccess = companyData.data_access as unknown as DataAccessPreferences;
           setPreferences({
             zillow: dataAccess.zillow ?? true,
             wealth_engine: dataAccess.wealth_engine ?? true,
@@ -111,7 +113,7 @@ export function DataPreferencesForm() {
       const { error: updateError } = await supabase
         .from('companies')
         .update({
-          data_access: preferences
+          data_access: preferences as unknown as Record<string, unknown>
         })
         .eq('id', userData.company_id);
 

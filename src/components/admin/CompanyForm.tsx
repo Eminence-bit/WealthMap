@@ -3,17 +3,24 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export function CompanyForm() {
   const [name, setName] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!name || !email) {
+      setError("Company name and contact email are required");
       toast({
         title: "Error",
         description: "Company name and contact email are required",
@@ -25,41 +32,6 @@ export function CompanyForm() {
     setLoading(true);
 
     try {
-      // Upload logo if provided
-      let logoUrl = '';
-      if (logo) {
-        const fileExt = logo.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('company_logos')
-          .upload(fileName, logo);
-        
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        // Get public URL for the uploaded logo
-        const { data: publicUrlData } = supabase.storage
-          .from('company_logos')
-          .getPublicUrl(fileName);
-        
-        logoUrl = publicUrlData.publicUrl;
-      }
-
-      // Create company record
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .insert({ 
-          name, 
-          logo_url: logoUrl || null,
-        })
-        .select()
-        .single();
-
-      if (companyError) {
-        throw companyError;
-      }
-
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -67,7 +39,84 @@ export function CompanyForm() {
         throw new Error('User not authenticated');
       }
 
-      // Insert or update user record
+      console.log("Current user:", user);
+
+      // Create company record first
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .insert({ 
+          name, 
+          logo_url: null, // We'll update this later if a logo is uploaded
+          data_access: {
+            zillow: true,
+            wealth_engine: true,
+            reportall: true
+          }
+        })
+        .select()
+        .single();
+
+      if (companyError) {
+        console.error("Company creation error:", companyError);
+        throw companyError;
+      }
+
+      console.log("Company created:", companyData);
+
+      // Upload logo if provided
+      let logoUrl = '';
+      if (logo && companyData) {
+        const fileExt = logo.name.split('.').pop();
+        const fileName = `${companyData.id}.${fileExt}`;
+        
+        // Create the storage bucket if it doesn't exist
+        const { data: bucketData, error: bucketError } = await supabase.storage
+          .getBucket('company_logos');
+          
+        if (bucketError && bucketError.message.includes('not found')) {
+          const { error: createBucketError } = await supabase.storage
+            .createBucket('company_logos', {
+              public: true,
+              fileSizeLimit: 5242880 // 5MB
+            });
+            
+          if (createBucketError) {
+            console.error("Error creating storage bucket:", createBucketError);
+            throw createBucketError;
+          }
+        }
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('company_logos')
+          .upload(fileName, logo);
+        
+        if (uploadError) {
+          console.error("Logo upload error:", uploadError);
+          // We continue even if logo upload fails
+          console.log("Continuing without logo...");
+        } else {
+          // Get public URL for the uploaded logo
+          const { data: publicUrlData } = supabase.storage
+            .from('company_logos')
+            .getPublicUrl(fileName);
+          
+          logoUrl = publicUrlData.publicUrl;
+          
+          // Update company with logo URL
+          if (logoUrl) {
+            const { error: updateLogoError } = await supabase
+              .from('companies')
+              .update({ logo_url: logoUrl })
+              .eq('id', companyData.id);
+              
+            if (updateLogoError) {
+              console.error("Error updating logo URL:", updateLogoError);
+            }
+          }
+        }
+      }
+
+      // Update user record with company ID
       const { error: userError } = await supabase
         .from('users')
         .upsert({ 
@@ -77,8 +126,11 @@ export function CompanyForm() {
         });
 
       if (userError) {
+        console.error("User update error:", userError);
         throw userError;
       }
+
+      console.log("User updated with company ID");
 
       // Create admin permission for the user
       const { error: permissionError } = await supabase
@@ -89,8 +141,11 @@ export function CompanyForm() {
         });
 
       if (permissionError) {
+        console.error("Permission creation error:", permissionError);
         throw permissionError;
       }
+
+      console.log("Admin permission created");
 
       toast({
         title: "Success!",
@@ -99,11 +154,12 @@ export function CompanyForm() {
 
       // Redirect to dashboard
       setTimeout(() => {
-        window.location.href = '/admin/dashboard';
+        navigate('/admin/dashboard');
       }, 1500);
 
     } catch (error: any) {
       console.error('Error registering company:', error);
+      setError(error.message || "Could not register company");
       toast({
         title: "Registration failed",
         description: error.message || "Could not register company",
@@ -117,6 +173,14 @@ export function CompanyForm() {
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg max-w-md mx-auto">
       <h2 className="text-2xl font-bold mb-6 text-center">Register Your Company</h2>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">

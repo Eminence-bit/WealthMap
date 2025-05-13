@@ -5,52 +5,67 @@ import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // Check if user has a company
-        try {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('company_id, permissions(role)')
-            .eq('id', session.user.id)
-            .single();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Current session:", session);
+        
+        if (session) {
+          // Check if user has a company
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('company_id, permissions(role)')
+              .eq('id', session.user.id)
+              .single();
 
-          if (userError) throw userError;
+            if (userError) {
+              console.error("User data fetch error:", userError);
+              throw userError;
+            }
 
-          // If no company, redirect to company registration
-          if (!userData.company_id) {
-            navigate('/company/register');
-            return;
-          }
+            console.log("User data:", userData);
 
-          // Check if user is admin
-          const isAdmin = userData.permissions?.some((p: any) => p.role === 'admin');
-          
-          if (isAdmin) {
-            navigate('/admin/dashboard');
-          } else {
+            // If no company, redirect to company registration
+            if (!userData.company_id) {
+              navigate('/company/register');
+              return;
+            }
+
+            // Check if user is admin
+            const isAdmin = userData.permissions?.some((p: any) => p.role === 'admin');
+            console.log("Is admin:", isAdmin);
+            
+            if (isAdmin) {
+              navigate('/admin/dashboard');
+            } else {
+              navigate('/map');
+            }
+          } catch (error) {
+            console.error('Error checking user data:', error);
+            // If we can't determine, default to the map
             navigate('/map');
           }
-        } catch (error) {
-          console.error('Error checking user data:', error);
-          // If we can't determine, default to the map
-          navigate('/map');
         }
+        
+        setLoadingSession(false);
+      } catch (error) {
+        console.error("Session check error:", error);
+        setLoadingSession(false);
       }
-      
-      setLoadingSession(false);
     };
 
     checkSession();
@@ -58,8 +73,10 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!email || !password) {
+      setError("Email and password are required");
       toast({
         title: "Error",
         description: "Email and password are required",
@@ -72,12 +89,17 @@ export default function Login() {
 
     try {
       // Sign in with email and password
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error) throw error;
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        throw signInError;
+      }
+
+      console.log("Sign in successful:", data);
 
       if (data.user) {
         // Check if user has a company and permissions
@@ -87,7 +109,12 @@ export default function Login() {
           .eq('id', data.user.id)
           .single();
 
-        if (userError) throw userError;
+        if (userError) {
+          console.error("User data fetch error:", userError);
+          throw userError;
+        }
+
+        console.log("User data after login:", userData);
 
         // If no company, redirect to company registration
         if (!userData.company_id) {
@@ -111,6 +138,7 @@ export default function Login() {
       }
     } catch (error: any) {
       console.error('Error logging in:', error);
+      setError(error.message || "Could not log in");
       toast({
         title: "Login failed",
         description: error.message || "Could not log in",
@@ -123,8 +151,10 @@ export default function Login() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!email || !password) {
+      setError("Email and password are required");
       toast({
         title: "Error",
         description: "Email and password are required",
@@ -137,25 +167,58 @@ export default function Login() {
 
     try {
       // Sign up with email and password
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password
       });
 
-      if (error) throw error;
+      if (signUpError) {
+        console.error("Sign up error:", signUpError);
+        throw signUpError;
+      }
 
-      toast({
-        title: "Account created",
-        description: "Your account has been created. You can now register your company.",
-      });
+      console.log("Sign up successful:", data);
 
-      // Redirect to company registration
-      setTimeout(() => {
-        navigate('/company/register');
-      }, 1500);
+      // Check if email confirmation is required
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError("This email is already registered. Please log in.");
+        return;
+      }
+
+      if (data.user && !data.session) {
+        toast({
+          title: "Email confirmation required",
+          description: "Please check your email for a confirmation link",
+        });
+      } else {
+        toast({
+          title: "Account created",
+          description: "Your account has been created. You can now register your company.",
+        });
+
+        // Create user record in users table
+        if (data.user) {
+          const { error: userError } = await supabase
+            .from('users')
+            .upsert({ 
+              id: data.user.id, 
+              email
+            });
+
+          if (userError) {
+            console.error("Error creating user record:", userError);
+          }
+        }
+
+        // Redirect to company registration
+        setTimeout(() => {
+          navigate('/company/register');
+        }, 1500);
+      }
 
     } catch (error: any) {
       console.error('Error signing up:', error);
+      setError(error.message || "Could not create account");
       toast({
         title: "Sign up failed",
         description: error.message || "Could not create account",
@@ -179,6 +242,14 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-center">Wealth Map Challenge</h1>
           <h2 className="mt-6 text-center text-2xl font-bold text-gray-900">Sign in to your account</h2>
         </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <div className="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleLogin}>
