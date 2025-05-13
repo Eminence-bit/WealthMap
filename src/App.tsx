@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +11,7 @@ import Login from "./pages/Login";
 import Map from "./pages/Map";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 
 // Admin UI pages
 import CompanyRegistration from "./pages/admin/CompanyRegistration";
@@ -60,11 +60,12 @@ const App = () => (
         <Sonner />
         <Routes>
           {/* Auth and Basic Routes */}
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/company/register" element={<CompanyRegistration />} />
           <Route path="/map" element={<Map />} />
           <Route path="/profile" element={<Profile />} />
-          
+
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={
             <AdminProtectedRoute>
@@ -81,7 +82,7 @@ const App = () => (
               <DataPreferences />
             </AdminProtectedRoute>
           } />
-          
+
           {/* 404 Page */}
           <Route path="*" element={<NotFound />} />
         </Routes>
