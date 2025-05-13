@@ -12,7 +12,7 @@ export default function Map() {
   // Redirect to login if not signed in
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      navigate('/');
+      navigate('/login');
     }
   }, [isLoaded, isSignedIn, navigate]);
   

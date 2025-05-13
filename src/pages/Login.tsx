@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -7,10 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Role, getUserWithPermissions, createUserWithRole } from '@/lib/schema';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<Role>('employee');
   const [loading, setLoading] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,15 +24,10 @@ export default function Login() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.log("Current session:", session);
-        
+
         if (session) {
-          // Check if user has a company
           try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('company_id, permissions(role)')
-              .eq('id', session.user.id)
-              .single();
+            const { data: userData, error: userError } = await getUserWithPermissions(session.user.id);
 
             if (userError) {
               console.error("User data fetch error:", userError);
@@ -46,9 +43,9 @@ export default function Login() {
             }
 
             // Check if user is admin
-            const isAdmin = userData.permissions?.some((p: any) => p.role === 'admin');
+            const isAdmin = userData.permissions?.some((p) => p.role === 'admin');
             console.log("Is admin:", isAdmin);
-            
+
             if (isAdmin) {
               navigate('/admin/dashboard');
             } else {
@@ -60,7 +57,7 @@ export default function Login() {
             navigate('/map');
           }
         }
-        
+
         setLoadingSession(false);
       } catch (error) {
         console.error("Session check error:", error);
@@ -74,7 +71,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!email || !password) {
       setError("Email and password are required");
       toast({
@@ -102,12 +99,7 @@ export default function Login() {
       console.log("Sign in successful:", data);
 
       if (data.user) {
-        // Check if user has a company and permissions
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('company_id, permissions(role)')
-          .eq('id', data.user.id)
-          .single();
+        const { data: userData, error: userError } = await getUserWithPermissions(data.user.id);
 
         if (userError) {
           console.error("User data fetch error:", userError);
@@ -122,9 +114,13 @@ export default function Login() {
           return;
         }
 
-        // Check if user is admin
-        const isAdmin = userData.permissions?.some((p: any) => p.role === 'admin');
-        
+        // Check if user's role matches the selected role
+        const isAdmin = userData.permissions?.some((p) => p.role === 'admin');
+
+        if (role === 'admin' && !isAdmin) {
+          throw new Error("You don't have admin privileges");
+        }
+
         toast({
           title: "Logged in",
           description: "You have successfully logged in",
@@ -152,7 +148,7 @@ export default function Login() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!email || !password) {
       setError("Email and password are required");
       toast({
@@ -196,17 +192,13 @@ export default function Login() {
           description: "Your account has been created. You can now register your company.",
         });
 
-        // Create user record in users table
+        // Create user with role using helper function
         if (data.user) {
-          const { error: userError } = await supabase
-            .from('users')
-            .upsert({ 
-              id: data.user.id, 
-              email
-            });
+          const { error: createError } = await createUserWithRole(data.user.id, email, role);
 
-          if (userError) {
-            console.error("Error creating user record:", userError);
+          if (createError) {
+            console.error("Error creating user:", createError);
+            throw createError;
           }
         }
 
@@ -289,6 +281,26 @@ export default function Login() {
               </div>
             </div>
 
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                Login as
+              </label>
+              <div className="mt-1">
+                <Select
+                  value={role}
+                  onValueChange={(value: Role) => setRole(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="flex flex-col space-y-3">
               <Button
                 type="submit"
@@ -296,9 +308,9 @@ export default function Login() {
               >
                 {loading ? 'Processing...' : 'Sign in'}
               </Button>
-              
+
               <div className="text-center text-sm text-gray-500">or</div>
-              
+
               <Button
                 type="button"
                 variant="outline"

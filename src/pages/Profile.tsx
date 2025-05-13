@@ -63,7 +63,7 @@ export default function Profile() {
       
       if (error) throw error;
       
-      navigate('/');
+      navigate('/login');
     } catch (err) {
       console.error('Sign out error:', err);
       toast({
