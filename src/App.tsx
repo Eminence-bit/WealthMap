@@ -6,10 +6,21 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Sentry from '@sentry/react';
+
+// Employee UI pages
 import Login from "./pages/Login";
 import Map from "./pages/Map";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+
+// Admin UI pages
+import CompanyRegistration from "./pages/admin/CompanyRegistration";
+import Dashboard from "./pages/admin/Dashboard";
+import EmployeeManagement from "./pages/admin/EmployeeManagement";
+import DataPreferences from "./pages/admin/DataPreferences";
+
+// Protected Routes
+import { AdminProtectedRoute } from "./components/admin/AdminProtectedRoute";
 
 // Initialize Sentry with provided DSN
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN || 'https://206e87f9f44bca9d76b599585be49860@o4509310131240960.ingest.us.sentry.io/4509310133993473';
@@ -48,9 +59,30 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Routes>
+          {/* Auth and Basic Routes */}
           <Route path="/" element={<Login />} />
+          <Route path="/company/register" element={<CompanyRegistration />} />
           <Route path="/map" element={<Map />} />
           <Route path="/profile" element={<Profile />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={
+            <AdminProtectedRoute>
+              <Dashboard />
+            </AdminProtectedRoute>
+          } />
+          <Route path="/admin/employees" element={
+            <AdminProtectedRoute>
+              <EmployeeManagement />
+            </AdminProtectedRoute>
+          } />
+          <Route path="/admin/preferences" element={
+            <AdminProtectedRoute>
+              <DataPreferences />
+            </AdminProtectedRoute>
+          } />
+          
+          {/* 404 Page */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

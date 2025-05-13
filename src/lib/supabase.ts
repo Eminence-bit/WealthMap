@@ -2,24 +2,29 @@
 import { createClient } from '@supabase/supabase-js';
 import { toast } from '@/components/ui/use-toast';
 
-// Use the provided environment variables or fallback to direct values if needed
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vlsnwwdntspvrdffgyaq.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsc253d2RudHNwdnJkZmZneWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNTE0ODksImV4cCI6MjA2MjYyNzQ4OX0.msMjUFt8W2UjBv1gOftYjLMszT2vDUBCo3kLmLVGdBQ';
+// Use the values from the client file to ensure consistency
+const supabaseUrl = 'https://kwwgmofueugonsbgvqtr.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d2dtb2Z1ZXVnb25zYmd2cXRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNTA5OTEsImV4cCI6MjA2MjYyNjk5MX0.5ZYy76tzIs7wImMhPlRnSy-yEZeXjP-hGoli_QWzoYo';
 
 // Create the Supabase client
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
 // Check if connection is working, and show toast notification if there are issues
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Using default Supabase credentials. Consider setting VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+  console.warn('Supabase URL or Anon Key is missing.');
   
   // Show a toast notification if we're in a browser environment
   if (typeof window !== 'undefined') {
     setTimeout(() => {
       toast({
-        title: "Supabase Connection Notice",
-        description: "Using default Supabase credentials.",
-        variant: "default",
+        title: "Supabase Connection Issue",
+        description: "API configuration is incomplete.",
+        variant: "destructive",
       });
     }, 1000);
   }
