@@ -6,8 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
+interface DataAccessPreferences {
+  zillow: boolean;
+  wealth_engine: boolean;
+  reportall: boolean;
+}
+
 export function DataPreferencesForm() {
-  const [preferences, setPreferences] = useState({
+  const [preferences, setPreferences] = useState<DataAccessPreferences>({
     zillow: true,
     wealth_engine: true,
     reportall: true
@@ -53,7 +59,12 @@ export function DataPreferencesForm() {
 
         // Update state with company preferences
         if (companyData && companyData.data_access) {
-          setPreferences(companyData.data_access);
+          const dataAccess = companyData.data_access as DataAccessPreferences;
+          setPreferences({
+            zillow: dataAccess.zillow ?? true,
+            wealth_engine: dataAccess.wealth_engine ?? true,
+            reportall: dataAccess.reportall ?? true
+          });
         }
       } catch (error: any) {
         console.error('Error fetching company preferences:', error);

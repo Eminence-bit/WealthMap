@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -55,6 +91,147 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      properties: {
+        Row: {
+          address: string
+          coordinates: Json
+          created_at: string
+          id: string
+          owner_name: string | null
+          size_sqft: number | null
+          value_usd: number | null
+          wealth_confidence: number | null
+          wealth_estimate_usd: number | null
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          coordinates: Json
+          created_at?: string
+          id?: string
+          owner_name?: string | null
+          size_sqft?: number | null
+          value_usd?: number | null
+          wealth_confidence?: number | null
+          wealth_estimate_usd?: number | null
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          coordinates?: Json
+          created_at?: string
+          id?: string
+          owner_name?: string | null
+          size_sqft?: number | null
+          value_usd?: number | null
+          wealth_confidence?: number | null
+          wealth_estimate_usd?: number | null
+          zip_code?: string
+        }
+        Relationships: []
+      }
+      property_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          price_usd: number
+          property_id: string
+          transaction_date: string
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          price_usd: number
+          property_id: string
+          transaction_date: string
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          price_usd?: number
+          property_id?: string
+          transaction_date?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          report_data: Json
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          report_data: Json
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          report_data?: Json
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_filters: {
+        Row: {
+          created_at: string
+          filter_params: Json
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filter_params: Json
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filter_params?: Json
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_filters_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -122,6 +299,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      zip_codes: {
+        Row: {
+          city: string
+          geo_data: Json | null
+          median_income: number | null
+          population: number | null
+          state: string
+          zip_code: string
+        }
+        Insert: {
+          city: string
+          geo_data?: Json | null
+          median_income?: number | null
+          population?: number | null
+          state: string
+          zip_code: string
+        }
+        Update: {
+          city?: string
+          geo_data?: Json | null
+          median_income?: number | null
+          population?: number | null
+          state?: string
+          zip_code?: string
+        }
+        Relationships: []
       }
     }
     Views: {

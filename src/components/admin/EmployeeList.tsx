@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { PermissionForm } from './PermissionForm';
-import { UserWithDetails } from '@/lib/admin-types';
+import { UserWithDetails, Permission, UserActivity } from '@/lib/admin-types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export function EmployeeList() {
@@ -59,10 +59,24 @@ export function EmployeeList() {
 
           if (activityError) {
             console.error('Error fetching activity for user:', user.id, activityError);
-            return { ...user, user_activity: [] };
+            return {
+              ...user,
+              user_activity: [] as UserActivity[],
+              permissions: (user.permissions || []).map(p => ({
+                ...p,
+                role: p.role as 'admin' | 'employee'
+              })) as Permission[]
+            };
           }
 
-          return { ...user, user_activity: activity || [] };
+          return {
+            ...user,
+            user_activity: activity || [],
+            permissions: (user.permissions || []).map(p => ({
+              ...p,
+              role: p.role as 'admin' | 'employee'
+            })) as Permission[]
+          } as UserWithDetails;
         })
       );
 
@@ -128,7 +142,7 @@ export function EmployeeList() {
     if (!user.permissions || user.permissions.length === 0) {
       return 'employee';
     }
-    return user.permissions[0].role as 'admin' | 'employee';
+    return user.permissions[0].role;
   };
 
   if (loading) {

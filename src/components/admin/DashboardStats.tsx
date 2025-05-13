@@ -48,16 +48,24 @@ export function DashboardStats() {
           throw employeesError;
         }
 
+        // Get user IDs from the same company for the subquery
+        const { data: companyUserIds, error: userIdsError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('company_id', userData.company_id);
+          
+        if (userIdsError) {
+          throw userIdsError;
+        }
+        
+        // Extract the IDs into an array
+        const userIdArray = companyUserIds.map(user => user.id);
+        
         // Get recent activities
         const { data: activities, error: activitiesError } = await supabase
           .from('user_activity')
           .select('action, user_id')
-          .in('user_id', 
-            supabase
-              .from('users')
-              .select('id')
-              .eq('company_id', userData.company_id)
-          );
+          .in('user_id', userIdArray);
 
         if (activitiesError) {
           throw activitiesError;
