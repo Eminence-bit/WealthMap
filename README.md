@@ -10,10 +10,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone https://github.com/Eminence-bit/employee-property-finder.git
+git clone https://github.com/Eminence-bit/WealthMap.git
 
 # Step 2: Navigate to the project directory.
-cd employee-property-finder
+cd WealthMap
 
 # Step 3: Install the necessary dependencies.
 npm i
